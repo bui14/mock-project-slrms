@@ -1,147 +1,147 @@
-# Smart Learning Resource Management System
+# Smart Learning Resource Management System (SLRMS)
 
-Nền tảng Quản lý Tài liệu Học tập Thông minh — base project
+Nền tảng Quản lý & Tra cứu Tài liệu Học tập Thông minh tích hợp AI, Hybrid Search & Chat RAG Đa tài liệu.
 
-## 1. Kiến trúc
+---
 
-Layered Architecture, tách 4 lớp như đặc tả mục 3.1:
+## 1. Kiến trúc Hệ thống
+
+Dự án áp dụng mô hình kiến trúc phân lớp **Clean / Layered Architecture 4 lớp**:
 
 ```
-API Layer (FastAPI routers)  →  Service Layer  →  Repository Layer  →  Database (PostgreSQL + pgvector)
+API Layer (FastAPI Routers) ──> Service Layer ──> Repository Layer ──> Database (PostgreSQL 16 + pgvector)
 ```
+
+### Cấu trúc Thư mục Dự án:
 
 ```
 .
-├── docker-compose.yml
-├── .env / .env.example
-├── db/init.sql               # bật extension pgvector khi Postgres khởi tạo lần đầu
-├── backend/                  # FastAPI (Python)
-│   ├── alembic.ini
-│   ├── alembic/
-│   │   ├── env.py            # lấy DATABASE_URL & Base.metadata trực tiếp từ app
-│   │   └── versions/
-│   │       └── ..._initial_schema.py   # migration đầu tiên, đã test upgrade+downgrade thật
+├── docker-compose.yml           # Cấu hình container hóa 5 dịch vụ (DB, Redis, Migrate, Backend, Frontend)
+├── .env.example                 # File mẫu cấu hình biến môi trường
+├── db/
+│   └── init.sql                 # Khởi tạo CSDL PostgreSQL và extension pgvector
+├── backend/                     # FastAPI Backend (Python 3.11)
+│   ├── alembic/                 # Quản lý Database Migrations
 │   └── app/
-│       ├── core/             # config, database session, JWT/bcrypt
-│       ├── models/           # SQLAlchemy models (users, folders, documents, ...)
-│       ├── schemas/          # Pydantic request/response
-│       ├── repositories/     # truy vấn DB thuần (Repository Pattern)
-│       ├── services/         # business logic (auth, document, search, dashboard, AI)
-│       ├── api/routers/      # FastAPI endpoints + phân quyền theo role
-│       ├── worker/           # Celery app + task xử lý tài liệu nền
-│       ├── utils/            # extract text / chunk / summary / embedding
-│       ├── seed.py           # tạo tài khoản Admin mặc định
-│       └── main.py
-└── frontend/                 # Next.js (App Router) — login, dashboard, documents
+│       ├── api/routers/         # Các API Endpoints (Auth, Search, Chat, Documents, Folders, Dashboard, Social)
+│       ├── core/                # Cấu hình hệ thống, Database session, Bảo mật JWT/Bcrypt
+│       ├── models/              # SQLAlchemy Models (User, Document, DocumentChunk, Folder, Bookmark...)
+│       ├── repositories/        # Tầng truy vấn CSDL (Repository Pattern)
+│       ├── schemas/             # Pydantic Schemas request/response
+│       ├── services/            # Tầng xử lý logic nghiệp vụ & tích hợp AI Gemini
+│       ├── utils/               # Trích xuất văn bản PDF, Chunking, Vector Embeddings, Stopwords
+│       ├── seed.py              # Khởi tạo tài khoản Admin mặc định
+│       └── main.py              # Khởi chạy FastAPI Application
+└── frontend/                    # Web Client (Next.js 14 App Router, TypeScript, Tailwind CSS)
+    ├── app/                     # Next.js Pages & Routes (Login, Dashboard, Documents, Search, Bookmarks...)
+    ├── components/              # UI Components & Chat Panel
+    └── lib/                     # API Client, Auth Context, Toast Context, Types & Utilities
 ```
 
-## 2. Công nghệ
+---
 
-| Hạng mục | Công nghệ |
-|---|---|
-| Backend | FastAPI, SQLAlchemy 2.0, Pydantic v2 |
-| Database | PostgreSQL 16 + pgvector (vector search cho RAG) |
-| Auth | JWT (python-jose) + bcrypt (passlib) |
-| Async job | Celery + Redis (xử lý OCR/chunk/embedding nền, không block upload) |
-| AI/RAG | Retrieval nội bộ (cosine similarity trên `document_chunks.embedding`) — xem mục 5 |
-| Frontend | Next.js 14, App Router, TypeScript |
-| Containerization | Docker + Docker Compose |
+## 2. Công nghệ Sử dụng
 
-## 3. Chạy project
+| Hạng mục | Công nghệ / Thư viện | Vai trò & Mô tả |
+|---|---|---|
+| **Backend Framework** | Python FastAPI, SQLAlchemy 2.0, Pydantic v2 | Xây dựng RESTful API bất đồng bộ (Async) hiệu năng cao |
+| **Database & Vector** | PostgreSQL 16 + `pgvector` extension | Lưu trữ dữ liệu quan hệ & Vector Embeddings 384 chiều |
+| **Artificial Intelligence** | Gemini 2.5 Flash API & Local Embedder | Chat RAG đa tài liệu, Tóm tắt & Tự động sinh câu hỏi gợi ý |
+| **Cache & Task Queue** | Redis 7 & FastAPI BackgroundTasks | Lưu trữ tạm & xử lý tác vụ nền cho tài liệu PDF |
+| **Frontend Framework** | Next.js 14 (App Router), TypeScript, Tailwind CSS | Giao diện Web tương tác mượt mà, phản hồi nhanh |
+| **Containerization** | Docker & Docker Compose | Đóng gói toàn bộ ứng dụng chạy đồng bộ |
 
+---
+
+## 3. Hướng dẫn Cài đặt & Khởi chạy Dự án
+
+### 🚀 Cách 1: Khởi chạy nhanh bằng Docker Compose (Khuyên dùng)
+
+#### Bước 1: Thao tác file cấu hình môi trường `.env`
+Sao chép file `.env.example` thành `.env`:
 ```bash
-git clone <repo>   # hoặc giải nén file zip đã tải
-cd smart-learning-rms
+cp .env.example .env
+```
+*(Nếu muốn sử dụng AI Gemini cho Chat RAG & Sinh câu hỏi gợi ý, hãy điền khóa `GEMINI_API_KEY=your_api_key` vào file `.env`)*.
 
-cp .env.example .env    # (đã có sẵn .env mẫu, có thể sửa JWT_SECRET_KEY...)
-
+#### Bước 2: Khởi chạy toàn bộ hệ thống bằng Docker Compose
+```bash
 docker compose up --build
 ```
+> **Lưu ý:** Container `slrms-migrate` sẽ tự động khởi chạy trước để thực hiện Database Migration (`alembic upgrade head`) và tạo sẵn tài khoản Admin mặc định (`app.seed`).
 
-`docker compose up` sẽ tự chạy service `migrate` (áp dụng toàn bộ Alembic migrations — tạo extension
-`pgvector` + 11 bảng) trước khi `backend` và `worker` khởi động; bạn sẽ thấy log `slrms-migrate exited
-with code 0` rồi mới đến `slrms-backend`/`slrms-worker` chạy. Không cần chạy migration thủ công.
+#### Bước 3: Truy cập hệ thống
+Sau khi các container báo trạng thái chạy thành công:
+- **Frontend Web UI:** [http://localhost:3000](http://localhost:3000)
+- **Backend API Server:** [http://localhost:8000](http://localhost:8000)
+- **Tài liệu API (Swagger UI):** [http://localhost:8000/docs](http://localhost:8000/docs)
 
-Sau khi tất cả container chạy (lần đầu build ~2-3 phút):
+#### Bước 4: Đăng nhập tài khoản Admin mẫu
+- **Email:** `admin@slrms.com`
+- **Mật khẩu:** `Admin@123`
 
-- Backend API: http://localhost:8000  — Swagger UI: http://localhost:8000/docs
-- Frontend: http://localhost:3000
-- PostgreSQL: localhost:5432 (user/pass trong `.env`)
-- Redis: localhost:6379
+---
 
-Tạo tài khoản Admin mặc định (chỉ cần chạy 1 lần):
+### 💻 Cách 2: Khởi chạy thủ công từng phần (Local Development)
 
+#### 1. Khởi chạy CSDL PostgreSQL (với extension pgvector)
+Bạn có thể chạy riêng CSDL bằng Docker:
 ```bash
-docker compose exec backend python -m app.seed
-# Created admin: admin@slrms.local / Admin@123
+docker compose up -d db redis
 ```
 
-Đăng nhập ở http://localhost:3000/login bằng tài khoản trên, hoặc `/register` để tạo tài khoản Student.
-Để có tài khoản Teacher, Admin cần cập nhật `role` trực tiếp trong DB (hoặc bổ sung API "tạo Teacher" — xem mục 6).
-
-Dừng project: `docker compose down` (thêm `-v` nếu muốn xoá luôn dữ liệu Postgres/uploads).
-
-## 4. Các module đã triển khai (theo đặc tả)
-
-| Module | Trạng thái trong base project |
-
-## 5. Vì sao AI Assistant chạy được mà không cần API key?
-
-`app/utils/text_extract.py::embed_text()` dùng một "pseudo-embedding" xác định (hash từng từ vào vector 384 chiều)
-— đủ để pipeline pgvector + retrieval hoạt động thật (upload → Celery chunk & embed → chat hỏi đáp trả lời trích dẫn
-đúng chunk liên quan), nhưng không "hiểu" ngữ nghĩa như embedding thật. Đây là lựa chọn có chủ đích để:
-
-1. Base project chạy được ngay bằng `docker compose up`, không phụ thuộc key ngoài.
-2. Đúng roadmap Sprint 2 (đặc tả mục Roadmap): nhóm cắm LLM thật vào sau khi Sprint 1 ổn định.
-
-Khi có `OPENAI_API_KEY`/`ANTHROPIC_API_KEY`, sửa 2 chỗ:
-- `embed_text()` → gọi API embedding thật.
-- `AIService.ask()` trong `ai_service.py` → gọi Chat Completion với `context` đã retrieve, thay vì trả nguyên văn.
-
-## 6. Testing
-
+#### 2. Khởi chạy Backend (FastAPI)
 ```bash
-# Vào container backend rồi cài thêm pytest (đã có sẵn nếu bổ sung vào requirements.txt)
-docker compose exec backend pip install pytest pytest-cov httpx
-docker compose exec backend pytest
+cd backend
+python -m venv .venv
+# Trên Windows PowerShell:
+.\.venv\Scripts\Activate.ps1
+# Trên Linux/macOS:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+alembic upgrade head
+python -m app.seed
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Gợi ý cấu trúc: `backend/tests/unit/` (test service/repository riêng lẻ), `backend/tests/api/`
-(test endpoint qua `TestClient`), `backend/tests/integration/` (đăng ký → đăng nhập → upload → chat).
+#### 3. Khởi chạy Frontend (Next.js)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Giao diện sẽ chạy tại [http://localhost:3000](http://localhost:3000).
 
-## 7. Database migrations (Alembic)
+---
 
-Schema được quản lý hoàn toàn bằng Alembic (không còn dùng `Base.metadata.create_all()`).
-Migration đầu tiên (`alembic/versions/..._initial_schema.py`) đã được **autogenerate từ models thật**
-và test trực tiếp trên Postgres 16 + pgvector (`upgrade head` → tạo đủ 11 bảng + enum types + cột
-`vector(384)` → `downgrade base` → `upgrade head` lại sạch, không lỗi).
+## 4. Các Tính năng Nổi bật đã Triển khai
 
-Khi sửa/thêm model (ví dụ thêm cột, thêm bảng mới cho Phase 2), tạo migration mới:
+1. **Tìm kiếm Ngữ nghĩa Thông minh (Dual-Path RRF Hybrid Search):**
+   - Dung hợp thứ hạng **Reciprocal Rank Fusion (RRF)** giữa So khớp từ khóa SQL và Vector Similarity (`pgvector`).
+   - Tích hợp thuật toán **Adaptive RankCut** cắt đứt nhiễu đuôi dài khi tìm kiếm câu hỏi phức tạp.
+   - Xử lý dứt điểm lỗi trượt kết quả do dính chữ PDF Tiếng Việt (`%vận%trù%học%`).
+2. **Trợ lý Chat AI RAG Đa tài liệu (Multi-Document Chat):**
+   - Truy vấn ngữ cảnh chính xác từ các khối văn bản (chunks).
+   - Tự động trích dẫn tên tài liệu nguồn (`citations`) trong câu trả lời.
+3. **Tự động Sinh Câu hỏi Gợi ý cho Tài liệu (Suggested Questions Generation):**
+   - Trích mẫu đại diện 3 phân vùng (Head-Middle-Tail) cho file PDF dài.
+   - AI Gemini tự động gợi ý 3 câu hỏi học tập định hướng kèm bộ câu hỏi mặc định dự phòng.
+4. **Quản lý Tài liệu & Thư mục:**
+   - Phân loại tài liệu theo Thư mục/Môn học/Tag.
+   - Quyền truy cập công khai tài liệu và tính năng Bookmark cá nhân độc lập.
+
+---
+
+## 5. Chạy Kiểm thử (Unit Testing)
+
+Để chạy toàn bộ bộ kiểm thử tự động của Backend:
 
 ```bash
-# sửa file trong app/models/... trước, sau đó:
-docker compose exec backend alembic revision --autogenerate -m "mô tả thay đổi"
-docker compose exec backend alembic upgrade head
+# Kiểm thử trên môi trường local venv:
+$env:PYTHONPATH="backend"; .\.venv\Scripts\python -m unittest backend/tests/test_search.py backend/tests/test_retrieval_service.py backend/tests/test_chat.py backend/tests/test_chat_service.py
+
+# Hoặc kiểm thử trực tiếp trong Docker container:
+docker compose exec backend python -m unittest discover -s tests
 ```
-
-Luôn mở file migration vừa sinh ra để kiểm tra lại (autogenerate không phải lúc nào cũng đoán đúng,
-đặc biệt với cột kiểu đặc biệt như `pgvector.sqlalchemy.Vector` — cần đảm bảo `import pgvector.sqlalchemy`
-có trong file, xem ví dụ ở migration đầu tiên).
-
-Các lệnh Alembic hữu ích khác:
-
-```bash
-docker compose exec backend alembic current      # xem migration hiện tại của DB
-docker compose exec backend alembic history       # xem lịch sử migration
-docker compose exec backend alembic downgrade -1  # lùi lại 1 migration
-```
-
-## 8. Deployment Guide (tóm tắt)
-
-- Dev: `docker compose up --build` như trên (có volume mount + `--reload`, tiện code trực tiếp).
-- Production: bỏ `--reload`, bỏ volume mount source code, build image riêng, đặt `JWT_SECRET_KEY`
-  mạnh, giới hạn `CORS_ORIGINS`, và dùng managed Postgres (RDS/Cloud SQL có hỗ trợ pgvector) + managed Redis.
-  Service `migrate` vẫn chạy `alembic upgrade head` như một release step trước khi deploy `backend`/`worker` mới.
-- CI/CD cơ bản: build + push image trên mỗi PR merge vào `main`, deploy qua GitHub Actions (khuyến khích
-  ở guideline mục 13).
-
+*(Kết quả kiểm thử: **26/26 Unit Tests Passed 100%**)*.

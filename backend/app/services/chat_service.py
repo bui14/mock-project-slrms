@@ -163,7 +163,7 @@ class ChatService:
             ChatCitation(
                 chunk_id=chunk.chunk_id,
                 chunk_index=chunk.chunk_index,
-                quote=chunk.content,
+                quote=build_source_quote(chunk.content, max_chars=MAX_CITATION_QUOTE_CHARS),
                 score=chunk.score,
                 heading_path=chunk.heading_path,
             )

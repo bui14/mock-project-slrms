@@ -15,7 +15,7 @@ from app.models.document import Document, DocumentChunk, ProcessingStatus
 from app.models.folder import Folder
 from app.models.user import User, UserRole
 from app.schemas.retrieval import RetrievedChunk
-from app.services.chat_service import REFUSAL_ANSWER, ChatService
+from app.services.chat_service import REFUSAL_ANSWER, ChatService, build_source_quote
 from app.services.gemini_provider import GeneratedAnswer, GeminiProviderError
 
 
@@ -171,9 +171,8 @@ class ChatServiceTestCase(unittest.TestCase):
         self.assertEqual(response.answer, "Bien dung de luu du lieu.")
         self.assertEqual(len(response.sources), 1)
         self.assertEqual(response.sources[0].chunk_id, retrieved.chunk_id)
-        self.assertEqual(response.sources[0].quote, retrieved.content)
-        self.assertGreater(len(response.sources[0].quote), 400)
-        self.assertIn("\n", response.sources[0].quote)
+        self.assertEqual(response.sources[0].quote, build_source_quote(retrieved.content, max_chars=400))
+        self.assertLessEqual(len(response.sources[0].quote), 400)
         self.assertIn("Mức: P1", response.sources[0].quote)
         self.assertIn("Mức: P2", response.sources[0].quote)
         messages = self.db.query(ChatMessage).order_by(ChatMessage.created_at).all()

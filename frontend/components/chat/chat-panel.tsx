@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Send, Sparkles, Loader2, Quote, Plus, History, Trash2, ChevronDown } from "lucide-react";
+import { Send, Sparkles, Loader2, Quote, Plus, History, Trash2, ChevronDown, ChevronRight, BookOpen } from "lucide-react";
 import { chatApi, ApiError } from "@/lib/api";
 import type { ChatMessage, ChatSession } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -265,23 +265,6 @@ export function ChatPanel({ documentId, suggestedQuestions }: ChatPanelProps) {
                   )}
                 >
                   <p className="whitespace-pre-wrap">{m.content}</p>
-                  {m.sources.length > 0 && (
-                    <div className="mt-2.5 space-y-2 border-t border-border/40 pt-2">
-                      {m.sources.map((s) => (
-                        <div key={s.chunk_id} className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                          <Quote className="mt-0.5 h-3 w-3 shrink-0" />
-                          <div>
-                            {s.heading_path.length > 0 && (
-                              <p className="mb-0.5 font-medium text-foreground/70">
-                                {s.heading_path.join(" › ")}
-                              </p>
-                            )}
-                            <span>&ldquo;{s.quote}&rdquo;</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
